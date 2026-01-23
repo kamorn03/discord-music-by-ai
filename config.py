@@ -22,6 +22,10 @@ PREFIX = os.getenv("BOT_PREFIX", "!")
 LAVALINK_URI = os.getenv("LAVALINK_URI", "http://localhost:2333")
 LAVALINK_PASSWORD = os.getenv("LAVALINK_PASSWORD", "youshallnotpass")
 
+# Debug: Print config on load
+print(f"[CONFIG] LAVALINK_URI = {LAVALINK_URI}")
+print(f"[CONFIG] LAVALINK_PASSWORD = {LAVALINK_PASSWORD}")
+
 # Spotify Configuration (optional)
 SPOTIFY_CLIENT_ID = os.getenv("SPOTIFY_CLIENT_ID", "")
 SPOTIFY_CLIENT_SECRET = os.getenv("SPOTIFY_CLIENT_SECRET", "")
