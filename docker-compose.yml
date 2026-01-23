@@ -1,0 +1,44 @@
+version: "3.8"
+
+services:
+  # Discord Music Bot
+  bot:
+    build: .
+    container_name: discord-music-bot
+    restart: unless-stopped
+    env_file:
+      - .env
+    environment:
+      - LAVALINK_URI=http://lavalink:2333
+    depends_on:
+      lavalink:
+        condition: service_healthy
+    networks:
+      - lavalink
+
+  # Lavalink Audio Server
+  lavalink:
+    image: ghcr.io/lavalink-devs/lavalink:4
+    container_name: lavalink
+    restart: unless-stopped
+    environment:
+      - _JAVA_OPTIONS=-Xmx512M
+      - SERVER_PORT=2333
+      - LAVALINK_SERVER_PASSWORD=${LAVALINK_PASSWORD:-youshallnotpass}
+    volumes:
+      - ./application.yml:/opt/Lavalink/application.yml
+      - ./plugins:/opt/Lavalink/plugins
+    ports:
+      - "2333:2333"
+    networks:
+      - lavalink
+    healthcheck:
+      test: ["CMD", "wget", "-q", "-O", "-", "http://localhost:2333/version"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 30s
+
+networks:
+  lavalink:
+    name: lavalink
