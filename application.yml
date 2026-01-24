@@ -37,8 +37,6 @@ plugins:
     clients:
       - TVHTML5EMBEDDED
       - TV
-      - MUSIC
-      - WEB
     skipOnFailure: true
 
   lavasrc:
