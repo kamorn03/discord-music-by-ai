@@ -35,6 +35,22 @@ services:
     networks:
       - lavalink
 
+  # yt-cipher (remote cipher server for YouTube signature fixes)
+  yt-cipher:
+    image: ghcr.io/kikkia/yt-cipher:latest
+    container_name: yt-cipher
+    restart: unless-stopped
+    env_file:
+      - .env
+    environment:
+      - API_TOKEN=${YTCIPHER_TOKEN}
+      - PORT=8001
+      - HOST=0.0.0.0
+    ports:
+      - "8001:8001"
+    networks:
+      - lavalink
+
 networks:
   lavalink:
     name: lavalink
