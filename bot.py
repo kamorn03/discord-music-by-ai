@@ -216,8 +216,16 @@ async def play(ctx: commands.Context, *, query: str):
             if direct_url:
                 tracks = await wavelink.Playable.search(direct_url)
             else:
-                tracks = await wavelink.Playable.search(query, source=wavelink.TrackSource.YouTube)
+                # Try YouTube first
+                try:
+                    tracks = await wavelink.Playable.search(query, source=wavelink.TrackSource.YouTube)
+                except Exception as e:
+                    logger.warning(f"YouTube search failed: {e}")
+                    tracks = None
+                
+                # Fallback to SoundCloud if no tracks or error
                 if not tracks:
+                    logger.info("Falling back to SoundCloud search...")
                     tracks = await wavelink.Playable.search(query, source=wavelink.TrackSource.SoundCloud)
 
         if not tracks:
