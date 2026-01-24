@@ -11,8 +11,7 @@ services:
     environment:
       - LAVALINK_URI=http://lavalink:2333
     depends_on:
-      lavalink:
-        condition: service_healthy
+      - lavalink
     networks:
       - lavalink
 
@@ -32,12 +31,6 @@ services:
       - "2333:2333"
     networks:
       - lavalink
-    healthcheck:
-      test: ["CMD", "wget", "-q", "-O", "-", "http://localhost:2333/version"]
-      interval: 10s
-      timeout: 5s
-      retries: 5
-      start_period: 30s
 
 networks:
   lavalink:

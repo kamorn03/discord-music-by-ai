@@ -11,6 +11,11 @@ import asyncio
 import re
 from typing import Optional
 import config
+import socket
+import logging
+
+logging.basicConfig(level=logging.INFO)
+logger = logging.getLogger(__name__)
 
 # Spotify URL pattern
 SPOTIFY_REGEX = re.compile(
@@ -32,15 +37,78 @@ class MusicBot(commands.Bot):
 
     async def setup_hook(self):
         """Setup wavelink nodes when bot starts."""
+        logger.info("="*60)
+        logger.info("LAVALINK CONNECTION DEBUG INFO")
+        logger.info("="*60)
+        logger.info(f"Lavalink URI: {config.LAVALINK_URI}")
+        logger.info(f"Lavalink Password: {'*' * len(config.LAVALINK_PASSWORD)}")
+        
+        # Parse URI to get hostname and port
+        from urllib.parse import urlparse
+        parsed = urlparse(config.LAVALINK_URI)
+        hostname = parsed.hostname or 'localhost'
+        port = parsed.port or 2333
+        
+        logger.info(f"Parsed Hostname: {hostname}")
+        logger.info(f"Parsed Port: {port}")
+        
+        # Try to resolve hostname
+        try:
+            logger.info(f"Attempting DNS resolution for: {hostname}")
+            ip_address = socket.gethostbyname(hostname)
+            logger.info(f"✓ Resolved {hostname} -> {ip_address}")
+        except socket.gaierror as e:
+            logger.error(f"✗ DNS resolution failed for {hostname}: {e}")
+        except Exception as e:
+            logger.error(f"✗ Error resolving hostname: {e}")
+        
+        # Try to check if port is reachable
+        try:
+            logger.info(f"Testing TCP connection to {hostname}:{port}...")
+            sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+            sock.settimeout(5)
+            result = sock.connect_ex((hostname, port))
+            sock.close()
+            if result == 0:
+                logger.info(f"✓ Port {port} is OPEN on {hostname}")
+            else:
+                logger.warning(f"✗ Port {port} is CLOSED on {hostname} (error code: {result})")
+        except Exception as e:
+            logger.error(f"✗ Error testing connection: {e}")
+        
+        # Get local network info
+        try:
+            local_hostname = socket.gethostname()
+            local_ip = socket.gethostbyname(local_hostname)
+            logger.info(f"Local hostname: {local_hostname}")
+            logger.info(f"Local IP: {local_ip}")
+        except Exception as e:
+            logger.error(f"Error getting local network info: {e}")
+        
+        logger.info("="*60)
+        logger.info("Attempting to connect to Lavalink node...")
+        logger.info("="*60)
+        
         node = wavelink.Node(
             uri=config.LAVALINK_URI,
             password=config.LAVALINK_PASSWORD
         )
-        await wavelink.Pool.connect(nodes=[node], client=self, cache_capacity=100)
+        
+        try:
+            await wavelink.Pool.connect(nodes=[node], client=self, cache_capacity=100)
+            logger.info("✓ Successfully connected to Lavalink!")
+        except Exception as e:
+            logger.error(f"✗ Failed to connect to Lavalink: {e}")
+            logger.error("Please check:")
+            logger.error("  1. Lavalink service is running")
+            logger.error("  2. LAVALINK_URI is correct (use internal hostname on Railway)")
+            logger.error("  3. LAVALINK_PASSWORD matches")
+            logger.error("  4. Network connectivity between services")
+            raise
 
         # Sync slash commands
         await self.tree.sync()
-        print(f"Synced slash commands!")
+        logger.info("Synced slash commands!")
 
     async def on_ready(self):
         print(f"Bot is ready! Logged in as {self.user}")
@@ -53,7 +121,13 @@ class MusicBot(commands.Bot):
         )
 
     async def on_wavelink_node_ready(self, payload: wavelink.NodeReadyEventPayload):
-        print(f"Wavelink node '{payload.node.identifier}' is ready!")
+        logger.info("="*60)
+        logger.info(f"✓ Wavelink node '{payload.node.identifier}' is READY!")
+        logger.info(f"Node URI: {payload.node.uri}")
+        logger.info(f"Node Status: {payload.node.status}")
+        logger.info(f"Session ID: {payload.session_id}")
+        logger.info(f"Resumed: {payload.resumed}")
+        logger.info("="*60)
 
     async def on_wavelink_track_start(self, payload: wavelink.TrackStartEventPayload):
         player = payload.player
