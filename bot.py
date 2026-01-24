@@ -24,6 +24,8 @@ YTDLP_CACHE = {}
 
 
 async def yt_dlp_extract(query: str) -> str | None:
+    if not config.YTDLP_ENABLED:
+        return None
     cache_key = query.lower().strip()
     now = time.time()
     cached = YTDLP_CACHE.get(cache_key)

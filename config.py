@@ -31,5 +31,6 @@ SPOTIFY_CLIENT_ID = os.getenv("SPOTIFY_CLIENT_ID", "")
 SPOTIFY_CLIENT_SECRET = os.getenv("SPOTIFY_CLIENT_SECRET", "")
 
 # yt-dlp cookies + cache
+YTDLP_ENABLED = os.getenv("YTDLP_ENABLED", "false").lower() == "true"
 YTDLP_COOKIES_PATH = os.getenv("YTDLP_COOKIES_PATH", "./cookies/cookies.txt")
 YTDLP_CACHE_TTL = int(os.getenv("YTDLP_CACHE_TTL", "1800"))
