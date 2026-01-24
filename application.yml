@@ -29,8 +29,7 @@ plugins:
       enabled: true
       refreshToken: ${YOUTUBE_REFRESH_TOKEN}
     remoteCipher:
-      url: "http://yt-cipher:8001"
-      password: ${YTCIPHER_TOKEN}
+      url: "https://cipher.kikkia.dev/"
       userAgent: "discord-music-bot"
     allowSearch: true
     allowDirectVideoIds: true
