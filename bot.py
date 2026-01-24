@@ -60,30 +60,15 @@ class MusicBot(commands.Bot):
     async def on_wavelink_node_ready(self, payload: wavelink.NodeReadyEventPayload):
         print(f"Wavelink node '{payload.node.identifier}' is ready!")
 
-    async def on_wavelink_track_start(self, payload: wavelink.TrackStartEventPayload):
+    async def on_wavelink_track_end(self, payload: wavelink.TrackEndEventPayload):
+        """Auto-play next track in queue when current track ends."""
         player = payload.player
-        track = payload.track
-
-        if player and player.channel:
-            embed = discord.Embed(
-                title="Now Playing",
-                description=f"[{track.title}]({track.uri})",
-                color=discord.Color.green()
-            )
-            embed.add_field(name="Duration", value=format_duration(track.length), inline=True)
-            embed.add_field(name="Author", value=track.author, inline=True)
-
-            if track.artwork:
-                embed.set_thumbnail(url=track.artwork)
-
-            channel = getattr(player, "text_channel", None)
-            if channel is not None:
-                try:
-                    perms = channel.permissions_for(channel.guild.me) if channel.guild else None
-                    if perms is None or perms.send_messages:
-                        await channel.send(embed=embed)
-                except Exception:
-                    pass
+        if player and not player.queue.is_empty:
+            try:
+                next_track = player.queue.get()
+                await player.play(next_track)
+            except Exception:
+                pass
 
 
 def format_duration(milliseconds: int) -> str:
