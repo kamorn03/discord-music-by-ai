@@ -9,6 +9,8 @@ from discord import app_commands
 import wavelink
 import asyncio
 import re
+import time
+import yt_dlp
 from typing import Optional
 import config
 import socket
@@ -16,6 +18,47 @@ import logging
 
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
+
+YTDLP_CACHE = {}
+
+
+async def yt_dlp_extract(query: str) -> str | None:
+    cache_key = query.lower().strip()
+    now = time.time()
+    cached = YTDLP_CACHE.get(cache_key)
+    if cached and cached[1] > now:
+        return cached[0]
+
+    ytdlp_opts = {
+        "quiet": True,
+        "no_warnings": True,
+        "noplaylist": True,
+        "format": "bestaudio/best",
+        "cookiefile": config.YTDLP_COOKIES_PATH,
+    }
+
+    def _extract():
+        with yt_dlp.YoutubeDL(ytdlp_opts) as ytdlp:
+            return ytdlp.extract_info(query, download=False)
+
+    try:
+        info = await asyncio.to_thread(_extract)
+    except Exception as exc:
+        logger.warning("yt-dlp extraction failed: %s", exc)
+        return None
+
+    if not info:
+        return None
+
+    if "entries" in info and info["entries"]:
+        info = info["entries"][0]
+
+    url = info.get("url")
+    if not url:
+        return None
+
+    YTDLP_CACHE[cache_key] = (url, now + config.YTDLP_CACHE_TTL)
+    return url
 
 # Spotify URL pattern
 SPOTIFY_REGEX = re.compile(
@@ -152,10 +195,23 @@ async def play(ctx: commands.Context, *, query: str):
             tracks = await wavelink.Playable.search(sc_query, source=wavelink.TrackSource.SoundCloud)
         elif query.startswith(("http://", "https://")):
             # Handle direct URLs (YouTube, etc.)
-            tracks = await wavelink.Playable.search(query)
+            if "youtube.com" in query or "youtu.be" in query:
+                direct_url = await yt_dlp_extract(query)
+                if direct_url:
+                    tracks = await wavelink.Playable.search(direct_url)
+                else:
+                    tracks = await wavelink.Playable.search(query)
+            else:
+                tracks = await wavelink.Playable.search(query)
         else:
-            # Search YouTube
-            tracks = await wavelink.Playable.search(query, source=wavelink.TrackSource.YouTube)
+            # Search YouTube via yt-dlp first, fallback to ytsearch then scsearch
+            direct_url = await yt_dlp_extract(f"ytsearch1:{query}")
+            if direct_url:
+                tracks = await wavelink.Playable.search(direct_url)
+            else:
+                tracks = await wavelink.Playable.search(query, source=wavelink.TrackSource.YouTube)
+                if not tracks:
+                    tracks = await wavelink.Playable.search(query, source=wavelink.TrackSource.SoundCloud)
 
         if not tracks:
             return await ctx.send("No tracks found!")

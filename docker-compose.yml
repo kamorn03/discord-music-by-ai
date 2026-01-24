@@ -14,6 +14,8 @@ services:
       - lavalink
     networks:
       - lavalink
+    volumes:
+      - ./cookies:/app/cookies:ro
 
   # Lavalink Audio Server
   lavalink:

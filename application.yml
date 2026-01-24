@@ -37,10 +37,6 @@ plugins:
     clients:
       - IOS
       - WEB
-      - ANDROID_MUSIC
-      - ANDROID
-      - TVHTML5EMBEDDED
-      - TV
     skipOnFailure: true
 
   lavasrc:
