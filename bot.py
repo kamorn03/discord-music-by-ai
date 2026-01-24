@@ -10,6 +10,7 @@ import wavelink
 import asyncio
 import re
 import time
+import os
 import yt_dlp
 from typing import Optional
 import config
@@ -28,6 +29,10 @@ async def yt_dlp_extract(query: str) -> str | None:
     cached = YTDLP_CACHE.get(cache_key)
     if cached and cached[1] > now:
         return cached[0]
+
+    if not os.path.exists(config.YTDLP_COOKIES_PATH):
+        logger.warning("yt-dlp cookies file not found at %s", config.YTDLP_COOKIES_PATH)
+        return None
 
     ytdlp_opts = {
         "quiet": True,
