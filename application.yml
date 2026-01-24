@@ -35,6 +35,8 @@ plugins:
     allowDirectVideoIds: true
     allowDirectPlaylistIds: true
     clients:
+      - ANDROID
+      - ANDROID_MUSIC
       - TVHTML5EMBEDDED
       - TV
     skipOnFailure: true

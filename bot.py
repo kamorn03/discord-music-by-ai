@@ -147,8 +147,9 @@ async def play(ctx: commands.Context, *, query: str):
             # Handle Spotify URLs
             tracks = await wavelink.Playable.search(query)
         elif query.startswith("scsearch:"):
-            # Handle SoundCloud searches
-            tracks = await wavelink.Playable.search(query)
+            # Handle SoundCloud searches explicitly
+            sc_query = query[len("scsearch:"):].strip()
+            tracks = await wavelink.Playable.search(sc_query, source=wavelink.TrackSource.SoundCloud)
         elif query.startswith(("http://", "https://")):
             # Handle direct URLs (YouTube, etc.)
             tracks = await wavelink.Playable.search(query)
