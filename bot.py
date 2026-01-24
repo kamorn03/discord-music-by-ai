@@ -133,12 +133,21 @@ async def play(ctx: commands.Context, *, query: str):
 
     await ctx.defer()
 
+    # Sanitize query to avoid invalid URLs (strip newlines/extra text)
+    query = query.strip()
+    url_match = re.search(r"https?://\S+", query)
+    if url_match:
+        query = url_match.group(0)
+
     # Check if it's a Spotify URL
     spotify_match = SPOTIFY_REGEX.match(query)
 
     try:
         if spotify_match:
             # Handle Spotify URLs
+            tracks = await wavelink.Playable.search(query)
+        elif query.startswith("scsearch:"):
+            # Handle SoundCloud searches
             tracks = await wavelink.Playable.search(query)
         elif query.startswith(("http://", "https://")):
             # Handle direct URLs (YouTube, etc.)
