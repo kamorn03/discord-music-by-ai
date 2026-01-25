@@ -1,26 +1,27 @@
-version: "3.8"
-
 services:
   bot:
     build: .
     container_name: discord-music-bot
     restart: unless-stopped
-    network_mode: host
     env_file:
       - .env
     environment:
-      - LAVALINK_URI=http://localhost:2333
+      - LAVALINK_URI=http://lavalink:2333
     depends_on:
-      - lavalink
+      lavalink:
+        condition: service_started
     volumes:
       - ./cookies:/app/cookies
       - ./data:/app/data
+    networks:
+      - music-net
 
   lavalink:
     image: ghcr.io/lavalink-devs/lavalink:4
     container_name: lavalink
     restart: unless-stopped
-    network_mode: host
+    ports:
+      - "2333:2333"
     env_file:
       - .env
     environment:
@@ -31,3 +32,9 @@ services:
     volumes:
       - ./application.yml:/opt/Lavalink/application.yml
       - ./plugins:/opt/Lavalink/plugins
+    networks:
+      - music-net
+
+networks:
+  music-net:
+    driver: bridge

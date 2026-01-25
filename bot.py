@@ -76,39 +76,88 @@ SPOTIFY_REGEX = re.compile(
 
 
 # Audio Filter Presets (similar to PrimeMusic)
-FILTER_PRESETS = {
-    "bassboost": wavelink.Filters(equalizer=wavelink.Equalizer(bands=[
+# These are created as functions since wavelink 3.x uses .set() method
+def create_filter_bassboost() -> wavelink.Filters:
+    filters = wavelink.Filters()
+    filters.equalizer.set(bands=[
         {"band": 0, "gain": 0.6},
         {"band": 1, "gain": 0.7},
         {"band": 2, "gain": 0.8},
         {"band": 3, "gain": 0.55},
         {"band": 4, "gain": 0.25},
-    ])),
-    "nightcore": wavelink.Filters(timescale=wavelink.Timescale(speed=1.3, pitch=1.3, rate=1.0)),
-    "vaporwave": wavelink.Filters(
-        timescale=wavelink.Timescale(speed=0.85, pitch=0.9, rate=1.0),
-        equalizer=wavelink.Equalizer(bands=[{"band": 0, "gain": 0.3}, {"band": 1, "gain": 0.3}])
-    ),
-    "8d": wavelink.Filters(rotation=wavelink.Rotation(rotation_hz=0.2)),
-    "karaoke": wavelink.Filters(karaoke=wavelink.Karaoke(level=1.0, mono_level=1.0, filter_band=220.0, filter_width=100.0)),
-    "tremolo": wavelink.Filters(tremolo=wavelink.Tremolo(frequency=4.0, depth=0.75)),
-    "vibrato": wavelink.Filters(vibrato=wavelink.Vibrato(frequency=4.0, depth=0.75)),
-    "lowpass": wavelink.Filters(low_pass=wavelink.LowPass(smoothing=20.0)),
-    "soft": wavelink.Filters(equalizer=wavelink.Equalizer(bands=[
+    ])
+    return filters
+
+def create_filter_nightcore() -> wavelink.Filters:
+    filters = wavelink.Filters()
+    filters.timescale.set(speed=1.3, pitch=1.3, rate=1.0)
+    return filters
+
+def create_filter_vaporwave() -> wavelink.Filters:
+    filters = wavelink.Filters()
+    filters.timescale.set(speed=0.85, pitch=0.9, rate=1.0)
+    filters.equalizer.set(bands=[{"band": 0, "gain": 0.3}, {"band": 1, "gain": 0.3}])
+    return filters
+
+def create_filter_8d() -> wavelink.Filters:
+    filters = wavelink.Filters()
+    filters.rotation.set(rotation_hz=0.2)
+    return filters
+
+def create_filter_karaoke() -> wavelink.Filters:
+    filters = wavelink.Filters()
+    filters.karaoke.set(level=1.0, mono_level=1.0, filter_band=220.0, filter_width=100.0)
+    return filters
+
+def create_filter_tremolo() -> wavelink.Filters:
+    filters = wavelink.Filters()
+    filters.tremolo.set(frequency=4.0, depth=0.75)
+    return filters
+
+def create_filter_vibrato() -> wavelink.Filters:
+    filters = wavelink.Filters()
+    filters.vibrato.set(frequency=4.0, depth=0.75)
+    return filters
+
+def create_filter_lowpass() -> wavelink.Filters:
+    filters = wavelink.Filters()
+    filters.low_pass.set(smoothing=20.0)
+    return filters
+
+def create_filter_soft() -> wavelink.Filters:
+    filters = wavelink.Filters()
+    filters.equalizer.set(bands=[
         {"band": 0, "gain": -0.25},
         {"band": 1, "gain": -0.25},
         {"band": 2, "gain": -0.125},
         {"band": 8, "gain": 0.25},
         {"band": 9, "gain": 0.25},
-    ])),
-    "loud": wavelink.Filters(equalizer=wavelink.Equalizer(bands=[
+    ])
+    return filters
+
+def create_filter_loud() -> wavelink.Filters:
+    filters = wavelink.Filters()
+    filters.equalizer.set(bands=[
         {"band": 0, "gain": 0.5},
         {"band": 1, "gain": 0.4},
         {"band": 2, "gain": 0.3},
         {"band": 3, "gain": 0.2},
         {"band": 8, "gain": 0.35},
         {"band": 9, "gain": 0.4},
-    ])),
+    ])
+    return filters
+
+FILTER_CREATORS = {
+    "bassboost": create_filter_bassboost,
+    "nightcore": create_filter_nightcore,
+    "vaporwave": create_filter_vaporwave,
+    "8d": create_filter_8d,
+    "karaoke": create_filter_karaoke,
+    "tremolo": create_filter_tremolo,
+    "vibrato": create_filter_vibrato,
+    "lowpass": create_filter_lowpass,
+    "soft": create_filter_soft,
+    "loud": create_filter_loud,
 }
 
 
@@ -153,15 +202,9 @@ class MusicBot(commands.Bot):
     async def on_wavelink_node_ready(self, payload: wavelink.NodeReadyEventPayload):
         print(f"Wavelink node '{payload.node.identifier}' is ready!")
 
-    async def on_wavelink_node_closed(self, payload: wavelink.NodeClosedEventPayload):
-        """Reconnect when node disconnects."""
-        logger.warning(f"Node {payload.node.identifier} closed. Attempting reconnection...")
-        await asyncio.sleep(5)
-        try:
-            await payload.node.connect()
-            logger.info(f"Successfully reconnected to node {payload.node.identifier}")
-        except Exception as e:
-            logger.error(f"Failed to reconnect to node: {e}")
+    async def on_wavelink_node_disconnected(self, payload):
+        """Handle node disconnection - wavelink 3.x handles reconnection automatically."""
+        logger.warning(f"A Lavalink node disconnected. Wavelink will attempt to reconnect automatically.")
 
     async def on_wavelink_track_end(self, payload: wavelink.TrackEndEventPayload):
         """Auto-play next track in queue or use autoplay when current track ends."""
@@ -701,10 +744,10 @@ async def filter_cmd(ctx: commands.Context, preset: Optional[str] = None):
         await player.set_filters(None)
         return await ctx.send("Filters cleared!")
 
-    if preset not in FILTER_PRESETS:
+    if preset not in FILTER_CREATORS:
         return await ctx.send(f"Unknown filter! Use `/filter` to see available filters.")
 
-    await player.set_filters(FILTER_PRESETS[preset])
+    await player.set_filters(FILTER_CREATORS[preset]())
     await ctx.send(f"Applied **{preset}** filter!")
 
 
@@ -714,7 +757,7 @@ async def bassboost(ctx: commands.Context):
     if not ctx.voice_client or not ctx.voice_client.playing:
         return await ctx.send("Nothing is playing!")
 
-    await ctx.voice_client.set_filters(FILTER_PRESETS["bassboost"])
+    await ctx.voice_client.set_filters(FILTER_CREATORS["bassboost"]())
     await ctx.send("Applied **bassboost** filter!")
 
 
@@ -724,7 +767,7 @@ async def nightcore(ctx: commands.Context):
     if not ctx.voice_client or not ctx.voice_client.playing:
         return await ctx.send("Nothing is playing!")
 
-    await ctx.voice_client.set_filters(FILTER_PRESETS["nightcore"])
+    await ctx.voice_client.set_filters(FILTER_CREATORS["nightcore"]())
     await ctx.send("Applied **nightcore** filter!")
 
 
@@ -734,7 +777,7 @@ async def vaporwave(ctx: commands.Context):
     if not ctx.voice_client or not ctx.voice_client.playing:
         return await ctx.send("Nothing is playing!")
 
-    await ctx.voice_client.set_filters(FILTER_PRESETS["vaporwave"])
+    await ctx.voice_client.set_filters(FILTER_CREATORS["vaporwave"]())
     await ctx.send("Applied **vaporwave** filter!")
 
 
