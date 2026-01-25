@@ -4,10 +4,13 @@ Loads settings from environment variables / .env file
 """
 
 import os
+import logging
 from dotenv import load_dotenv
 
 # Load environment variables from .env file
 load_dotenv()
+
+logger = logging.getLogger(__name__)
 
 # Discord Bot Token - Get from https://discord.com/developers/applications
 BOT_TOKEN = os.getenv("DISCORD_TOKEN", "")
@@ -34,3 +37,9 @@ SPOTIFY_CLIENT_SECRET = os.getenv("SPOTIFY_CLIENT_SECRET", "")
 YTDLP_ENABLED = os.getenv("YTDLP_ENABLED", "false").lower() == "true"
 YTDLP_COOKIES_PATH = os.getenv("YTDLP_COOKIES_PATH", "./cookies/cookies.txt")
 YTDLP_CACHE_TTL = int(os.getenv("YTDLP_CACHE_TTL", "1800"))
+
+# Validate yt-dlp configuration
+if YTDLP_ENABLED and not os.path.exists(YTDLP_COOKIES_PATH):
+    logger.warning(f"yt-dlp enabled but cookies file not found at {YTDLP_COOKIES_PATH}")
+    logger.warning("Disabling yt-dlp. To enable, create cookies file or set YTDLP_ENABLED=false")
+    YTDLP_ENABLED = False

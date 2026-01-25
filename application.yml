@@ -27,7 +27,10 @@ plugins:
     enabled: true
     oauth:
       enabled: true
-      refreshToken: ${YOUTUBE_REFRESH_TOKEN}
+      # Optional: Add YouTube refresh token for better reliability
+      # Get token from: https://github.com/lavalink-devs/youtube-source#oauth-setup
+      # If not provided, will use default YouTube client (may have rate limits)
+      refreshToken: ${YOUTUBE_REFRESH_TOKEN:-}
     remoteCipher:
       url: "https://cipher.kikkia.dev/"
       userAgent: "discord-music-bot"

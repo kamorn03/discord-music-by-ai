@@ -1,17 +1,23 @@
 # Discord Music Bot
 
-A Discord music bot that plays music from YouTube and Spotify. Built with discord.py and wavelink.
+A feature-rich Discord music bot that plays music from YouTube and Spotify. Built with discord.py and wavelink, inspired by [PrimeMusic-Lavalink](https://github.com/GlaceYT/PrimeMusic-Lavalink).
 
 ## Features
 
 - Play music from YouTube (URLs and search)
 - Play music from Spotify (tracks, albums, playlists)
+- Play music from SoundCloud (with fallback)
 - Queue management (add, remove, shuffle, clear)
 - Loop modes (track, queue)
-- Volume control
+- Volume control with server defaults
 - Seek functionality
 - Progress bar display
+- **Audio Filters** (bassboost, nightcore, vaporwave, 8D, karaoke, etc.)
+- **Autoplay Mode** - Automatically plays similar songs when queue is empty
+- **24/7 Mode** - Bot stays in channel even when no one is listening
+- **Playlist System** - Create, save, load, and manage personal playlists
 - Slash commands and text commands support
+- SQLite database for persistent settings
 - Docker deployment ready
 
 ## Quick Start with Docker (Recommended)
@@ -54,6 +60,25 @@ A Discord music bot that plays music from YouTube and Spotify. Built with discor
    SPOTIFY_CLIENT_ID=your_spotify_client_id
    SPOTIFY_CLIENT_SECRET=your_spotify_client_secret
    ```
+
+4. (Optional) For improved YouTube reliability, add YouTube OAuth token:
+   - Follow the guide: [YouTube OAuth Setup](https://github.com/lavalink-devs/youtube-source#oauth-setup)
+   - Add to `.env`:
+     ```env
+     YOUTUBE_REFRESH_TOKEN=your_youtube_refresh_token
+     ```
+   - **Note:** This is optional but recommended for better YouTube playback reliability
+
+5. (Optional) For age-restricted videos, enable yt-dlp:
+   - Export cookies from your browser using a browser extension:
+     - Chrome: [Get cookies.txt](https://chrome.google.com/webstore/detail/get-cookiestxt/bgaddhkoddajcdgocldbbfleckgcbcid)
+     - Firefox: [cookies.txt](https://addons.mozilla.org/en-US/firefox/addon/cookies-txt/)
+   - Save cookies file to `./cookies/cookies.txt`
+   - Enable in `.env`:
+     ```env
+     YTDLP_ENABLED=true
+     YTDLP_COOKIES_PATH=./cookies/cookies.txt
+     ```
 
 ### Step 3: Deploy with Docker
 
@@ -106,14 +131,19 @@ docker run -d \
 
 ```
 discord-music-bot/
-├── bot.py              # Main bot code
+├── bot.py              # Main bot code with all commands
 ├── config.py           # Configuration loader
+├── database.py         # SQLite database for playlists/settings
 ├── requirements.txt    # Python dependencies
 ├── Dockerfile          # Bot container image
 ├── docker-compose.yml  # Full stack deployment
 ├── application.yml     # Lavalink configuration
 ├── .env.example        # Environment template
-└── .env                # Your secrets (git-ignored)
+├── .env                # Your secrets (git-ignored)
+├── data/               # Database storage (Docker)
+│   └── music_bot.db    # SQLite database
+└── cookies/            # YouTube cookies (optional)
+    └── cookies.txt
 ```
 
 ## Environment Variables
@@ -130,6 +160,7 @@ discord-music-bot/
 
 ## Commands
 
+### Music Playback
 | Command | Aliases | Description |
 |---------|---------|-------------|
 | `!play <query>` | `!p` | Play a song (URL or search) |
@@ -137,19 +168,55 @@ discord-music-bot/
 | `!resume` | - | Resume playback |
 | `!skip` | `!s` | Skip current song |
 | `!stop` | - | Stop and clear queue |
+| `!seek <seconds>` | - | Seek to position |
+
+### Queue Management
+| Command | Aliases | Description |
+|---------|---------|-------------|
 | `!queue` | `!q` | Show the queue |
 | `!nowplaying` | `!np` | Show current song |
-| `!volume <0-100>` | `!vol` | Set volume |
 | `!shuffle` | - | Shuffle the queue |
 | `!loop [mode]` | - | Loop: off/track/queue |
-| `!seek <seconds>` | - | Seek to position |
 | `!remove <pos>` | - | Remove from queue |
 | `!clear` | - | Clear the queue |
+
+### Audio Filters
+| Command | Aliases | Description |
+|---------|---------|-------------|
+| `!filter [name]` | `!f` | Apply audio filter |
+| `!bassboost` | `!bass`, `!bb` | Apply bassboost |
+| `!nightcore` | `!nc` | Apply nightcore |
+| `!vaporwave` | `!vw` | Apply vaporwave |
+| `!clearfilter` | `!cf` | Remove all filters |
+
+**Available Filters:** bassboost, nightcore, vaporwave, 8d, karaoke, tremolo, vibrato, lowpass, soft, loud
+
+### Special Features
+| Command | Aliases | Description |
+|---------|---------|-------------|
+| `!autoplay` | `!ap` | Toggle autoplay mode |
+| `!247` | `!stay` | Toggle 24/7 mode |
+
+### Playlist Commands
+| Command | Description |
+|---------|-------------|
+| `!playlist create <name>` | Create a new playlist |
+| `!playlist delete <name>` | Delete a playlist |
+| `!playlist save <name>` | Save current queue to playlist |
+| `!playlist load <name>` | Load a playlist to queue |
+| `!playlist list` | Show your playlists |
+| `!playlist show <name>` | Show tracks in a playlist |
+
+### General
+| Command | Aliases | Description |
+|---------|---------|-------------|
 | `!join` | - | Join voice channel |
 | `!leave` | `!dc` | Leave voice channel |
+| `!volume <0-100>` | `!vol` | Set volume |
+| `!setvolume <0-100>` | `!setvol` | Set default server volume |
 | `!help` | - | Show all commands |
 
-All commands also work as slash commands (e.g., `/play`, `/skip`)
+All commands also work as slash commands (e.g., `/play`, `/skip`, `/filter`)
 
 ## Examples
 
@@ -162,26 +229,52 @@ All commands also work as slash commands (e.g., `/play`, `/skip`)
 
 ## Troubleshooting
 
-### Bot doesn't respond
-- Check if the bot is online: `docker-compose ps`
-- View bot logs: `docker-compose logs bot`
-- Verify the bot has the correct permissions
-- Make sure MESSAGE CONTENT INTENT is enabled
+### Bot doesn't respond to commands
+- **Check bot status:** `docker-compose ps`
+- **View bot logs:** `docker-compose logs bot`
+- **Verify permissions:** Ensure bot has "Send Messages" and "Embed Links" permissions
+- **Check intents:** Make sure MESSAGE CONTENT INTENT is enabled in Discord Developer Portal
+- **Slash commands not showing:** Wait a few minutes after bot starts, or try kicking and re-inviting the bot
 
-### No audio
-- Ensure Lavalink is running: `docker-compose logs lavalink`
-- Wait 30 seconds after starting for Lavalink to fully initialize
-- Verify the bot has Connect and Speak permissions in voice channel
+### No audio / Music doesn't play
+- **Check Lavalink:** Ensure Lavalink is running: `docker-compose logs lavalink`
+- **Wait for initialization:** Lavalink takes 30-60 seconds to fully start
+- **Verify permissions:** Bot needs "Connect" and "Speak" permissions in voice channel
+- **Check node connection:** Look for "Wavelink node is ready!" in bot logs
+- **Network issues:** Ensure port 2333 is accessible between bot and Lavalink
+
+### YouTube playback issues
+- **403 Forbidden errors:**
+  - Add YouTube OAuth token (see Step 2.4 in setup)
+  - Or enable yt-dlp with cookies (see Step 2.5 in setup)
+- **Age-restricted videos:**
+  - Enable yt-dlp with valid cookies file
+  - Set `YTDLP_ENABLED=true` in `.env`
+- **Rate limiting:**
+  - Add YouTube OAuth token for higher rate limits
+  - Use yt-dlp as fallback
 
 ### Spotify not working
-- Make sure you've added Spotify credentials in `.env`
-- Also update `application.yml` with Spotify credentials
-- Restart containers: `docker-compose restart`
+- **Check credentials:** Make sure you've added Spotify credentials in `.env`
+- **Update application.yml:** Also add Spotify credentials in `application.yml` (lines 57-58)
+- **Restart containers:** `docker-compose restart`
+- **Invalid client:** Verify your Spotify Client ID and Secret are correct
 
 ### Container keeps restarting
-- Check logs: `docker-compose logs -f`
-- Verify your `.env` file has valid tokens
-- Ensure ports aren't already in use
+- **Check logs:** `docker-compose logs -f`
+- **Verify tokens:** Ensure your `.env` file has valid Discord token
+- **Port conflicts:** Make sure ports 2333 isn't already in use
+- **Memory issues:** Ensure your system has at least 512MB RAM available
+
+### yt-dlp errors
+- **Cookies file not found:** Check that `YTDLP_COOKIES_PATH` points to valid file
+- **Cookies expired:** Re-export cookies from your browser
+- **Disable if not needed:** Set `YTDLP_ENABLED=false` in `.env`
+
+### High memory usage
+- **Restart bot:** `docker-compose restart bot`
+- **Check queue size:** Large queues consume more memory
+- **Lavalink memory:** Adjust Lavalink memory in `docker-compose.yml` if needed
 
 ## License
 

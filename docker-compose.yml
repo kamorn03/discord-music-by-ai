@@ -14,6 +14,7 @@ services:
       - lavalink
     volumes:
       - ./cookies:/app/cookies
+      - ./data:/app/data
 
   lavalink:
     image: ghcr.io/lavalink-devs/lavalink:4
