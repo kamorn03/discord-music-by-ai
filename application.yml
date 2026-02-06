@@ -30,12 +30,10 @@ plugins:
       enabled: true
       refreshToken: ${YOUTUBE_REFRESH_TOKEN:-}
       skipInitialization: false
-    pot:
-      provider: BOTGUARD
     clients:
-      - ANDROID_MUSIC
-      - TV
-      - IOS
+      - TVHTML5_SIMPLY_EMBEDDED_PLAYER
+      - ANDROID_VR
+      - WEB_REMIX
     allowSearch: true
     allowDirectVideoIds: true
     allowDirectPlaylistIds: true
