@@ -33,9 +33,9 @@ plugins:
     pot:
       provider: BOTGUARD
     clients:
-      - MUSIC
-      - WEB
-      - WEBEMBEDDED
+      - ANDROID_MUSIC
+      - TV
+      - IOS
     allowSearch: true
     allowDirectVideoIds: true
     allowDirectPlaylistIds: true
