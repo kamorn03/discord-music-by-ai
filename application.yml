@@ -31,9 +31,9 @@ plugins:
       refreshToken: ${YOUTUBE_REFRESH_TOKEN:-}
       skipInitialization: false
     clients:
-      - TVHTML5_SIMPLY_EMBEDDED_PLAYER
-      - ANDROID_VR
-      - WEB_REMIX
+      - MWEB
+      - ANDROID_MUSIC
+      - WEB_CREATOR
     allowSearch: true
     allowDirectVideoIds: true
     allowDirectPlaylistIds: true
