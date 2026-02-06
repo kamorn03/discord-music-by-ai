@@ -35,7 +35,7 @@ services:
     networks:
       - music-net
     healthcheck:
-      test: ["CMD-SHELL", "wget -q -O /dev/null http://localhost:2333/version || exit 1"]
+      test: ["CMD-SHELL", "wget --header='Authorization: youshallnotpass' -q -O /dev/null http://localhost:2333/version || exit 1"]
       interval: 5s
       timeout: 5s
       retries: 10
