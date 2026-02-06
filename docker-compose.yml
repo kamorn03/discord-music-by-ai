@@ -9,7 +9,7 @@ services:
       - LAVALINK_URI=http://lavalink:2333
     depends_on:
       lavalink:
-        condition: service_started
+        condition: service_healthy
     volumes:
       - ./cookies:/app/cookies
       - ./data:/app/data
@@ -34,6 +34,12 @@ services:
       - ./plugins:/opt/Lavalink/plugins
     networks:
       - music-net
+    healthcheck:
+      test: ["CMD-SHELL", "wget -q -O /dev/null http://localhost:2333/version || exit 1"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+      start_period: 10s
 
 networks:
   music-net:
